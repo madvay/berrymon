@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (c) 2018 by Advay Mengle - https://github.com/madvay/berryhood
+# Copyright (c) 2018 by Advay Mengle - https://github.com/madvay/berrymon
 # See the LICENSE and NOTICE files in the root of this repository.
 
 import subprocess
@@ -15,7 +15,6 @@ from time import sleep
 import urllib.request
 import os
 import re
-from sense_hat import SenseHat
 import logging
 from logging.handlers import TimedRotatingFileHandler
 import signal
@@ -137,6 +136,7 @@ sense = None
 if args.sensehat:
     print('Attempting to load Sense HAT')
     try:
+        from sense_hat import SenseHat
         sense = SenseHat()
         sense.clear(C_BLACK)
         sleep(0.25)

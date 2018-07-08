@@ -52,7 +52,7 @@ optional arguments:
 
 Includes:
 
-* (a) Alternate blinking light to indicate monlog is running.  Also provides a reference point for the bottom-right and orientation.
+* (a) Alternate blinking light to indicate berrymon is running.  Also provides a reference point for the bottom-right and orientation.
 * (b) Bar graph of SoC temperature (default: 40C to 80C)
 * (c) Bar graph of arm core frequency (default: 600MHz to 1400MHz)
 * (d) Current throttling status: bottom/red - undervoltage; middle/green - frequency capped; blue/top - throttled  
@@ -60,6 +60,12 @@ Includes:
 
 ## Running as a daemon
 
+_TODO_
+
+* The daemon user will need:
+  * `video` and `input` group membership if `--sensehat` is used
+  * `/etc/sudoers` no password access to `shutdown` and `reboot` if `--power-management` is used
+* Provide `IFTTT_TOKEN` environment variable if `--ifttt` is used
 
 
 ## License Notice
