@@ -26,6 +26,41 @@ max_temp = 80
 min_freq = 600000000
 max_freq = 1400000000
 
+sense = None
+
+BRIGHTNESS = 64
+FULLB = BRIGHTNESS
+
+C_BLACK = (0,0,0)
+C_DIM = (int(FULLB*3/4),int(FULLB*3/4),int(FULLB*3/4))
+
+C_RED = (FULLB,0,0)
+C_GREEN = (0,FULLB,0)
+C_BLUE = (0,0,FULLB)
+
+
+C_YELLOW = (FULLB,FULLB,0)
+C_PURPLE = (FULLB,0,FULLB)
+C_CYAN = (0,FULLB,FULLB)
+
+C_WHITE = (FULLB,FULLB,FULLB)
+
+def top_exception(exc_type, exc_value, exc_traceback):
+    try:
+        if sense:
+            sense.clear(C_RED)
+            sense.set_pixel(3,3,C_YELLOW)
+            sense.set_pixel(3,4,C_GREEN)
+            sense.set_pixel(4,3,C_BLUE)
+            sense.set_pixel(4,4,C_PURPLE)
+    except:
+        print('Ignoring exception on display of error LEDs')
+    sys.__excepthook__(exc_type, exc_value, exc_traceback)
+    return
+
+sys.excepthook = top_exception
+
+
 parser = argparse.ArgumentParser(description='Monitor Logger',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("-s", "--sensehat",
@@ -47,6 +82,9 @@ parser.add_argument("--max_freq", type=int, default=max_freq, help="Max bar grap
 parser.add_argument("--led_rotation", help="rotation of the Sense HAT LEDs (90deg increments)",
                     type=int, default=0)
 
+parser.add_argument("--power_management",
+                    help="allows joystick power control (middle=sudo shutdown, others=sudo reboot)",
+                    action="store_true")
 
 parser.add_argument("--log", help="path to log to", type=str, default=None)
 parser.add_argument("--log_days", help="days of logs to keep", type=int, default=7)
@@ -71,7 +109,7 @@ def setup_logs(path, days):
             if msg != '\n':
                 self.logger.log(self.level, msg)
 
-        def flush(_):
+        def flush(self):
             # can't force a flush of the logger
             return
 
@@ -91,23 +129,6 @@ min_freq = args.min_freq
 max_freq = args.max_freq
 
 MIL = 1000000
-
-BRIGHTNESS = 64
-FULLB = BRIGHTNESS
-
-C_BLACK = (0,0,0)
-C_DIM = (int(FULLB*3/4),int(FULLB*3/4),int(FULLB*3/4))
-
-C_RED = (FULLB,0,0)
-C_GREEN = (0,FULLB,0)
-C_BLUE = (0,0,FULLB)
-
-
-C_YELLOW = (FULLB,FULLB,0)
-C_PURPLE = (FULLB,0,FULLB)
-C_CYAN = (0,FULLB,FULLB)
-
-C_WHITE = (FULLB,FULLB,FULLB)
 
 last_blink = 0
 
@@ -129,12 +150,38 @@ if args.sensehat:
         sleep(0.25)
         sense.clear(C_BLACK)
         sense.set_rotation(args.led_rotation)
-        sense.low_light = False
+        sense.low_light = True
     except:
         print("Failed to load Sense HAT")
         if args.sensehat_required:
             raise
         sense = None
+
+if sense:
+    if args.power_management:
+        # Define the functions
+        def btn_shutdown():
+            print('Shutting down system due to button press')
+            sense.clear(C_BLUE)
+            sleep(0.5)
+            sense.clear(C_WHITE)
+            sleep(0.5)
+            os.system('sudo shutdown -h now')
+
+        def btn_reboot():
+            print('Rebooting system due to button press')
+            sense.clear(C_RED)
+            sleep(0.5)
+            sense.clear(C_GREEN)
+            sleep(0.5)
+            os.system('sudo reboot')
+
+        sense.stick.direction_up = btn_reboot
+        sense.stick.direction_down = btn_reboot
+        sense.stick.direction_left = btn_reboot
+        sense.stick.direction_right = btn_reboot
+        sense.stick.direction_middle = btn_shutdown
+
 
 def vcgencmd(args):
     v = ["/opt/vc/bin/vcgencmd"]

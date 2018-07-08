@@ -6,8 +6,8 @@ usage: berrymon.py [-h] [-s] [--sensehat_required] [-i]
                    [--ifttt_period IFTTT_PERIOD] [-p PERIOD]
                    [--min_temp MIN_TEMP] [--max_temp MAX_TEMP]
                    [--min_freq MIN_FREQ] [--max_freq MAX_FREQ]
-                   [--led_rotation LED_ROTATION] [--log LOG]
-                   [--log_days LOG_DAYS] [--log_period LOG_PERIOD]
+                   [--led_rotation LED_ROTATION] [--power_management]
+                   [--log LOG] [--log_days LOG_DAYS] [--log_period LOG_PERIOD]
 
 Monitor Logger
 
@@ -30,6 +30,8 @@ optional arguments:
   --led_rotation LED_ROTATION
                         rotation of the Sense HAT LEDs (90deg increments)
                         (default: 0)
+  --power_management    allows joystick power control (middle=sudo shutdown,
+                        others=sudo reboot) (default: False)
   --log LOG             path to log to (default: None)
   --log_days LOG_DAYS   days of logs to keep (default: 7)
   --log_period LOG_PERIOD
