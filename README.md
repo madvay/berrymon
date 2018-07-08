@@ -2,11 +2,9 @@
 
 Tools to monitor your single board computer.
 
-During heavy usage
-<img src="./imgs/photo-high-use-c.jpg" />
+<img src="./imgs/photo-low-use-c.jpg" height="300"/> <img src="./imgs/photo-high-use-c.jpg" height="300"/>
 
-During low usage
-<img src="./imgs/photo-low-use-c.jpg" />
+During low usage; and during high usage
 
 ## Usage
 ````
