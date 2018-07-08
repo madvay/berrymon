@@ -1,5 +1,13 @@
 # berrymon
 
+Tools to monitor your single board computer.
+
+During heavy usage
+<img src="./imgs/photo-high-use-c.jpg" />
+
+During low usage
+<img src="./imgs/photo-low-use-c.jpg" />
+
 ## Usage
 ````
 usage: berrymon.py [-h] [-s] [--sensehat_required] [-i]
@@ -40,7 +48,7 @@ optional arguments:
 
 ## Sense HAT display
 
-<img src="./leds.svg" />
+<img src="./imgs/leds.svg" />
 
 Includes:
 
