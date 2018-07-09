@@ -343,6 +343,10 @@ def loop():
         s = when - time.time()
         if s > 0:
             sleep(s)
+        else:
+            sleep(period)
+            # Skip missed triggers
+            when = time.time()
     print('Exitting')
     if sense:
         sense.clear(C_YELLOW)
