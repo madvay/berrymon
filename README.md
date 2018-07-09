@@ -14,6 +14,7 @@ usage: berrymon.py [-h] [-s] [--sensehat_required] [-i]
                    [--min_freq MIN_FREQ] [--max_freq MAX_FREQ]
                    [--led_rotation LED_ROTATION] [--power_management]
                    [--log LOG] [--log_days LOG_DAYS] [--log_period LOG_PERIOD]
+                   [--server SERVER] [--server_port SERVER_PORT]
 
 Monitor Logger
 
@@ -42,6 +43,10 @@ optional arguments:
   --log_days LOG_DAYS   days of logs to keep (default: 7)
   --log_period LOG_PERIOD
                         print/log every N executions (default: 1)
+  --server SERVER       run a webserver with monitoring on this IP (default:
+                        None)
+  --server_port SERVER_PORT
+                        webservder port (default: 8080)
 ````
 
 ## Sense HAT display
@@ -67,30 +72,4 @@ _TODO_
 
 
 ## License Notice
-See [LICENSE](LICENSE).
-
-````
-berrymon - Tools for monitoring a single board computer
-
-WARNING: You are responsible for following all relevant safety
-precautions and using your device responsibly. You must independently
-assess whether any advice or recommendations contained in this
-software (including all documentation) is suitable and safe for you and
-your device.
-
-Copyright (c) 2018 by Advay Mengle - https://github.com/madvay/berrymon
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this software except in compliance with the License.
-You may obtain a copy of the License at
-
-   http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
-This serves as the NOTICE under Section 4 d of the License.
-````
+See [LICENSE](LICENSE) and [NOTICE](NOTICE).

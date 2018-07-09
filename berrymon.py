@@ -89,6 +89,10 @@ parser.add_argument("--log", help="path to log to", type=str, default=None)
 parser.add_argument("--log_days", help="days of logs to keep", type=int, default=7)
 parser.add_argument("--log_period", help="print/log every N executions", type=int, default=1)
 
+
+parser.add_argument("--server", help="run a webserver with monitoring on this IP", type=str, default=None)
+parser.add_argument("--server_port", help="webservder port", type=int, default=8080)
+
 # Sets up our logs, and redirects stdout/err to those logs
 def setup_logs(path, days):
     logger = logging.getLogger(__name__)
@@ -309,8 +313,13 @@ def display(temp, freq, state):
 
 printon = 0
 ifttton = 0
+
+temp = 0
+freq = 0
+state = '??????'
+
 def oneshot():
-    global printon, ifttton
+    global printon, ifttton, temp, freq, state
     temp = float(temperature())
     freq = int(clock_freq('arm'))
     state = throttle_state()
@@ -352,5 +361,25 @@ def loop():
         sense.clear(C_YELLOW)
         sleep(0.1)
         sense.clear(C_BLACK)
+
+if args.server:
+    def run_server():
+        sys.path.append('./third_party/bottle/')
+        from bottle import route, run, request, response
+        @route('/')
+        def main():
+            ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f %Z')
+            if request.query.refresh:
+                response.set_header('Refresh', request.query.refresh)
+            return '<ul><li>{3}</li><li>{0:>5.1f} C</li><li>{1:>8.2f} MHz</li><li>{2:8s}</li></ul>'.format(temp, freq/MIL, state, ts)
+
+        def launch():
+            run(host=args.server, port=args.server_port)
+        
+        t = Thread(target=launch, args=())
+        t.start()
+        
+
+    run_server()
 
 loop()
