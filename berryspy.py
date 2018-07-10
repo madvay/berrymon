@@ -108,15 +108,18 @@ def run_server():
     @route('/')
     @route('/simple')
     def main():
+        refms = 0
         if request.query.refresh:
-            response.set_header('Refresh', request.query.refresh)
+            refms = int(request.query.refresh) * 1000
         if request.query.format == 'json':
             return ret
         hosts = request.query.hosts.split(',')
         if len(hosts) == 0 or hosts[0] == '':
             hosts = args.default_hosts
         vs = []
-        style = """<style>iframe {
+        refset = "<script>refms={0};</script>".format(refms)
+        style = refset + """<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<style>iframe {
     border-style: solid;
     border-width: 0.1px;
     width:300px;
@@ -126,7 +129,12 @@ def run_server():
 h4 {
     margin: 0.5em 0;
     text-align: center;
-}</style>"""
+}</style><script>
+var refresh = function(){$('iframe').each(function() {
+  this.src = this.src;
+});};
+if ( refms >0){setInterval(refresh, refms );}
+</script>"""
         for h in hosts:
             vs.append('<div style="display:inline-block"><h4>{0}</h4><iframe src="http://{0}"></iframe></div>'.format(h))
         return style + '' + ''.join(vs) + ''
