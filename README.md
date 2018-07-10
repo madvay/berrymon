@@ -6,6 +6,13 @@ Tools to monitor your single board computer.
 
 During low usage; and during high usage
 
+__WARNING:__ You are responsible for following all relevant safety
+precautions and using your device responsibly. You must independently
+assess whether any advice or recommendations contained in this
+software (including all documentation) is suitable and safe for you and
+your device. Do not rely on temperature or other measurements from this
+software to ensure safety - measurements may be out of date or wrong.
+
 ## Usage
 ````
 usage: berrymon.py [-h] [-s] [--sensehat_required] [-i]
@@ -16,7 +23,9 @@ usage: berrymon.py [-h] [-s] [--sensehat_required] [-i]
                    [--log LOG] [--log_days LOG_DAYS] [--log_period LOG_PERIOD]
                    [--server SERVER] [--server_port SERVER_PORT]
 
-Monitor Logger
+Monitor Logger - Monitors various properties of the system, logs them,
+displays them on a Sense HAT board, and advertises them as a server (see
+options).
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -46,8 +55,10 @@ optional arguments:
   --server SERVER       run a webserver with monitoring on this IP (default:
                         None)
   --server_port SERVER_PORT
-                        webservder port (default: 8080)
+                        webserver port (default: 8080)
 ````
+
+Requires Python 3.5 or later.
 
 ## Sense HAT display
 
@@ -69,6 +80,9 @@ _TODO_
   * `video` and `input` group membership if `--sensehat` is used
   * `/etc/sudoers` no password access to `shutdown` and `reboot` if `--power-management` is used
 * Provide `IFTTT_TOKEN` environment variable if `--ifttt` is used
+
+## berryspy
+
 
 
 ## License Notice

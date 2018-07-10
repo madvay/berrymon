@@ -1,13 +1,35 @@
 #!/usr/bin/env python3
 
 # Copyright (c) 2018 by Advay Mengle - https://github.com/madvay/berrymon
-# See the LICENSE and NOTICE files in the root of this repository.
+#
+# WARNING: You are responsible for following all relevant safety
+# precautions and using your device responsibly. You must independently
+# assess whether any advice or recommendations contained in this
+# software (including all documentation) is suitable and safe for you and
+# your device. Do not rely on temperature or other measurements from this
+# software to ensure safety - measurements may be out of date or wrong.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this software except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
+import sys
+assert sys.version_info >= (3,5)
+
+import copy
 import subprocess
 import urllib.parse
 import time
 import datetime
-import sys
+import platform
 import threading
 from datetime import datetime
 from threading import Thread
@@ -60,8 +82,23 @@ def top_exception(exc_type, exc_value, exc_traceback):
 sys.excepthook = top_exception
 
 
-parser = argparse.ArgumentParser(description='Monitor Logger',
-                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser = argparse.ArgumentParser(description="""Monitor Logger
+
+- Monitors various properties of the system, logs them, displays them
+on a Sense HAT board, and advertises them as a server (see options).
+""",
+                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                 epilog="""Copyright (c) 2018 Advay Mengle and others - see the LICENSE and NOTICE files included with this software.
+                                 
+WARNING: You are responsible for following all relevant safety
+precautions and using your device responsibly. You must independently
+assess whether any advice or recommendations contained in this
+software (including all documentation) is suitable and safe for you and
+your device.
+
+Do not rely on temperature or other measurements from this software
+to ensure safety - measurements may be out of date or wrong.
+                                 """)
 parser.add_argument("-s", "--sensehat",
                     help="enables the Sense HAT LEDs, optionally",
                     action="store_true")
@@ -91,7 +128,7 @@ parser.add_argument("--log_period", help="print/log every N executions", type=in
 
 
 parser.add_argument("--server", help="run a webserver with monitoring on this IP", type=str, default=None)
-parser.add_argument("--server_port", help="webservder port", type=int, default=8080)
+parser.add_argument("--server_port", help="webserver port", type=int, default=8080)
 
 # Sets up our logs, and redirects stdout/err to those logs
 def setup_logs(path, days):
@@ -314,24 +351,38 @@ def display(temp, freq, state):
 printon = 0
 ifttton = 0
 
-temp = 0
-freq = 0
-state = '??????'
+data = {
+    'name': platform.node(),
+    'machine': platform.machine(),
+    'dist': platform.dist(),
+    'release': platform.release(),
+    'system': platform.system(),
+    'version': platform.version(),
+    'now': 0
+}
+data['temp'] = 0
+data['freq'] = 0
+data['state'] = '??????'
+last = datetime.now()
 
 def oneshot():
-    global printon, ifttton, temp, freq, state
-    temp = float(temperature())
-    freq = int(clock_freq('arm'))
-    state = throttle_state()
+    global printon, ifttton, data, last
+    data2 = copy.deepcopy(data)
+    data2['temp'] = float(temperature())
+    data2['freq'] = int(clock_freq('arm'))
+    data2['state'] = throttle_state()
+    data = data2
+    last = datetime.now()
+    
 
     if printon % args.log_period == 0:
-        ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f %Z')
-        print('{3}  {0:>5.1f} C   {1:>8.2f} MHz   {2:8s}'.format(temp, freq/MIL, state, ts))
+        ts = last.strftime('%Y-%m-%d %H:%M:%S.%f %Z')
+        print('{3}  {0:>5.1f} C   {1:>8.2f} MHz   {2:8s}'.format(data['temp'], data['freq']/MIL, data['state'], ts))
     printon = printon + 1
     if ifttton % args.ifttt_period == 0:
-        ifttt_report(temp, freq, state)
+        ifttt_report(data['temp'], data['freq'], data['state'])
     ifttton = ifttton + 1
-    display(temp, freq, state)
+    display(data['temp'], data['freq'], data['state'])
 
 
 muststop = False
@@ -366,12 +417,21 @@ if args.server:
     def run_server():
         sys.path.append('./third_party/bottle/')
         from bottle import route, run, request, response
+
         @route('/')
+        @route('/simple')
         def main():
-            ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f %Z')
+            ts = last.strftime('%Y-%m-%d %H:%M:%S.%f %Z')
+            ret = copy.deepcopy(data)
+            ret['now'] = ts
             if request.query.refresh:
                 response.set_header('Refresh', request.query.refresh)
-            return '<ul><li>{3}</li><li>{0:>5.1f} C</li><li>{1:>8.2f} MHz</li><li>{2:8s}</li></ul>'.format(temp, freq/MIL, state, ts)
+            if request.query.format == 'json':
+                return ret
+            vs = []
+            for key, value in sorted(ret.items()):
+                vs.append('<tr><td>{0}</td><td>{1}</td></tr>'.format(key, value))
+            return '<table>' + ''.join(vs) + '</table>'
 
         def launch():
             run(host=args.server, port=args.server_port)
