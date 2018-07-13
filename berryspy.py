@@ -123,7 +123,7 @@ def run_server():
     border-style: solid;
     border-width: 0.1px;
     width:300px;
-    height:300px;
+    height:400px;
 }
 
 h4 {

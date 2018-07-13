@@ -41,6 +41,7 @@ import logging
 from logging.handlers import TimedRotatingFileHandler
 import signal
 import argparse
+import psutil
 
 min_temp = 40
 max_temp = 80
@@ -129,6 +130,7 @@ parser.add_argument("--log_period", help="print/log every N executions", type=in
 
 parser.add_argument("--server", help="run a webserver with monitoring on this IP", type=str, default=None)
 parser.add_argument("--server_port", help="webserver port", type=int, default=8080)
+parser.add_argument("--server_controls", help="permit unauthenticated INSECURE access to server controls over http", action='store_true')
 
 # Sets up our logs, and redirects stdout/err to those logs
 def setup_logs(path, days):
@@ -198,24 +200,32 @@ if args.sensehat:
             raise
         sense = None
 
+def control_shutdown():
+    if sense:
+        sense.clear(C_BLUE)
+        sleep(0.5)
+        sense.clear(C_WHITE)
+        sleep(0.5)
+    os.system('sudo shutdown -h now')
+
+def control_reboot():
+    if sense:
+        sense.clear(C_RED)
+        sleep(0.5)
+        sense.clear(C_GREEN)
+        sleep(0.5)
+    os.system('sudo reboot')
+
 if sense:
     if args.power_management:
         # Define the functions
         def btn_shutdown():
             print('Shutting down system due to button press')
-            sense.clear(C_BLUE)
-            sleep(0.5)
-            sense.clear(C_WHITE)
-            sleep(0.5)
-            os.system('sudo shutdown -h now')
+            control_shutdown()
 
         def btn_reboot():
             print('Rebooting system due to button press')
-            sense.clear(C_RED)
-            sleep(0.5)
-            sense.clear(C_GREEN)
-            sleep(0.5)
-            os.system('sudo reboot')
+            control_reboot()
 
         sense.stick.direction_up = btn_reboot
         sense.stick.direction_down = btn_reboot
@@ -352,32 +362,36 @@ printon = 0
 ifttton = 0
 
 data = {
-    'name': platform.node(),
-    'machine': platform.machine(),
-    'dist': platform.dist(),
-    'release': platform.release(),
-    'system': platform.system(),
-    'version': platform.version(),
-    'now': 0
+    '~name': platform.node(),
+    '~machine': platform.machine(),
+    '~dist': platform.dist(),
+    '~release': platform.release(),
+    '~system': platform.system(),
+    '~version': platform.version(),
+    '_now': 0
 }
-data['temp'] = 0
-data['freq'] = 0
-data['state'] = '??????'
-last = datetime.now()
 
-def oneshot():
+def update():
     global printon, ifttton, data, last
     data2 = copy.deepcopy(data)
     data2['temp'] = float(temperature())
     data2['freq'] = int(clock_freq('arm'))
     data2['state'] = throttle_state()
+    data2['load'] = psutil.cpu_percent(percpu=True)
+    data2['mem'] = psutil.virtual_memory().percent
+    data2['uptime'] = time.time() - psutil.boot_time()
     data = data2
     last = datetime.now()
-    
+
+update()
+
+def oneshot():
+    global printon, ifttton, data, last
+    update()
 
     if printon % args.log_period == 0:
         ts = last.strftime('%Y-%m-%d %H:%M:%S.%f %Z')
-        print('{3}  {0:>5.1f} C   {1:>8.2f} MHz   {2:8s}'.format(data['temp'], data['freq']/MIL, data['state'], ts))
+        print('{0} {1:>8.2f} U  {2:>5.1f} C   {3:>8.2f} MHz   {4:8s}  L {5}  M {6}'.format(ts, data['uptime'], data['temp'], data['freq']/MIL, data['state'], data['load'], data['mem']))
     printon = printon + 1
     if ifttton % args.ifttt_period == 0:
         ifttt_report(data['temp'], data['freq'], data['state'])
@@ -416,22 +430,41 @@ def loop():
 if args.server:
     def run_server():
         sys.path.append('./third_party/bottle/')
-        from bottle import route, run, request, response
+        from bottle import route, run, request, response, redirect, abort
 
         @route('/')
-        @route('/simple')
         def main():
             ts = last.strftime('%Y-%m-%d %H:%M:%S.%f %Z')
             ret = copy.deepcopy(data)
-            ret['now'] = ts
+            ret['_now'] = ts
             if request.query.refresh:
                 response.set_header('Refresh', request.query.refresh)
             if request.query.format == 'json':
                 return ret
             vs = []
+            if args.server_controls:
+                vs.append("""<tr><td class='Controls'>Controls</td><td>
+                <a target=_blank href='/power/shutdown'>Shutdown</a> | <a target=_blank href='/power/reboot'>Reboot</a></td></tr>
+                """)
             for key, value in sorted(ret.items()):
                 vs.append('<tr><td>{0}</td><td>{1}</td></tr>'.format(key, value))
             return '<table>' + ''.join(vs) + '</table>'
+
+        @route('/power/shutdown')
+        def power_shutdown():
+            if args.server_controls:
+                control_shutdown()
+                redirect('/')
+                return
+            abort(code=403)
+        
+        @route('/power/reboot')
+        def power_reboot():
+            if args.server_controls:
+                control_reboot()
+                redirect('/')
+                return
+            abort(code=403)
 
         def launch():
             run(host=args.server, port=args.server_port)
